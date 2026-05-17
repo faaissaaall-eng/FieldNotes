@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+  <meta name="apple-mobile-web-app-title" content="FieldStruct"/>
+  <title>FieldStruct</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+<div id="root"></div>
+
+<!-- ── Vendor libraries (do not edit) ─────────────────────────────────────── -->
+<script src="lib/msal.min.js"></script>
+<script src="lib/react.min.js"></script>
+<script src="lib/react-dom.min.js"></script>
+<script src="lib/pdfjs-worker.min.js"></script>
+<script src="lib/pdfjs.min.js"></script>
+<script>
+  /* Configure PDF.js worker — points to our local worker file */
+  if (window.pdfjsLib) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'lib/pdfjs-worker.min.js';
+    window.__pdfWorkerUrl = 'lib/pdfjs-worker.min.js';
+  }
+</script>
+<script src="lib/vendor-extra.min.js"></script>
+
+<!-- ── App source files (load order matters — dependencies first) ─────────── -->
+<script src="src/constants.js"></script>   <!-- themes, config, seed data           -->
+<script src="src/utils.js"></script>       <!-- uid, fmt, ts, ds, dl, load/saveData -->
+<script src="src/db.js"></script>          <!-- IndexedDB helpers                   -->
+<script src="src/onedrive.js"></script>    <!-- MSAL auth, upload, sync, hook       -->
+<script src="src/primitives.js"></script>  <!-- Chip, Toggle, Avatar, BackButton    -->
+<script src="src/drawing.js"></script>     <!-- DirectionWheel, MiniDir, CameraCone, markup -->
+<script src="src/HomeScreen.js"></script>  <!-- HomeScreen, ProjectDetail, VisitRow -->
+<script src="src/ProjectView.js"></script> <!-- ProjectView, PunchList, sheets      -->
+<script src="src/NewVisitSetup.js"></script> <!-- 2-step new visit wizard           -->
+<script src="src/reports.js"></script>     <!-- generatePDF, generateDOCX, ReportPanel -->
+<script src="src/ObservationTool.js"></script> <!-- The main inspection UI          -->
+<script src="src/App.js"></script>         <!-- Root App + ReactDOM.createRoot()    -->
+
+</body>
+</html>

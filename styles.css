@@ -1,0 +1,155 @@
+/* ─── reset ───────────────────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+  html, body, #root { height: 100%; width: 100%; overflow: hidden; background: #F5F5F7; }
+
+  /* ─── SF Pro stack ────────────────────────────────────────────────── */
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", system-ui, sans-serif;
+    font-feature-settings: "ss01","ss02","cv11";
+    letter-spacing: -0.011em;
+    color: #1D1D1F;
+  }
+  input, textarea, select, button { font-family: inherit; font-feature-settings: inherit; letter-spacing: inherit; }
+  input::placeholder, textarea::placeholder { color: #8E8E93; }
+  button { cursor: pointer; border: none; background: none; }
+
+  /* ─── scrollbars ──────────────────────────────────────────────────── */
+  ::-webkit-scrollbar { width: 0; height: 0; }
+  .scroll:hover::-webkit-scrollbar { width: 6px; height: 6px; }
+  .scroll:hover::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.18); border-radius: 6px; }
+
+  /* ─── system animations ───────────────────────────────────────────── */
+  @keyframes fadeIn   { from{opacity:0} to{opacity:1} }
+  @keyframes slideUp  { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes scaleIn  { from{opacity:0;transform:scale(0.96)} to{opacity:1;transform:scale(1)} }
+  @keyframes spin     { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+  @keyframes blink    { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  @keyframes pulse    { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.08);opacity:0.8} }
+  @keyframes sheetUp  { from{opacity:0;transform:translateY(40px) scale(0.98)} to{opacity:1;transform:translateY(0) scale(1)} }
+
+  .fade-in { animation: fadeIn 0.3s ease both; }
+  .slide-up { animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .scale-in { animation: scaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .sheet-up { animation: sheetUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+  /* ─── press-down feedback ─────────────────────────────────────────── */
+  .pressable { transition: transform 0.12s cubic-bezier(0.4,0,0.2,1), background 0.15s ease, box-shadow 0.15s ease; }
+  .pressable:active { transform: scale(0.975); }
+
+  /* ─── frosted glass ───────────────────────────────────────────────── */
+  .glass {
+    background: rgba(255,255,255,0.72);
+    -webkit-backdrop-filter: saturate(180%) blur(24px);
+    backdrop-filter: saturate(180%) blur(24px);
+  }
+  .glass-dark {
+    background: rgba(28,28,30,0.72);
+    -webkit-backdrop-filter: saturate(180%) blur(24px);
+    backdrop-filter: saturate(180%) blur(24px);
+  }
+
+  /* ─── card style ──────────────────────────────────────────────────── */
+  .card {
+    background: #FFFFFF;
+    border-radius: 14px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 0 0 0.5px rgba(0,0,0,0.06);
+  }
+  .card-elevated {
+    background: #FFFFFF;
+    border-radius: 14px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04), 0 0 0 0.5px rgba(0,0,0,0.06);
+  }
+
+  /* ─── system inputs ───────────────────────────────────────────────── */
+  .sys-input {
+    width: 100%;
+    background: rgba(118,118,128,0.08);
+    border: none;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 15px;
+    outline: none;
+    transition: background 0.15s ease, box-shadow 0.15s ease;
+    color: #1D1D1F;
+  }
+  .sys-input:focus {
+    background: #FFFFFF;
+    box-shadow: 0 0 0 3px rgba(0,122,255,0.15), 0 0 0 0.5px rgba(0,122,255,0.8);
+  }
+
+  /* ─── buttons ─────────────────────────────────────────────────────── */
+  .btn-primary {
+    background: #007AFF;
+    color: white;
+    border-radius: 10px;
+    padding: 9px 18px;
+    font-size: 15px;
+    font-weight: 590;
+    letter-spacing: -0.01em;
+    transition: background 0.12s, transform 0.12s;
+  }
+  .btn-primary:hover { background: #0071EB; }
+  .btn-primary:active { transform: scale(0.97); background: #0063D1; }
+  .btn-primary:disabled { background: rgba(0,122,255,0.3); cursor: not-allowed; }
+
+  .btn-secondary {
+    background: rgba(118,118,128,0.12);
+    color: #1D1D1F;
+    border-radius: 10px;
+    padding: 9px 18px;
+    font-size: 15px;
+    font-weight: 500;
+    transition: background 0.12s, transform 0.12s;
+  }
+  .btn-secondary:hover { background: rgba(118,118,128,0.18); }
+  .btn-secondary:active { transform: scale(0.97); }
+
+  .btn-tinted {
+    background: rgba(0,122,255,0.12);
+    color: #007AFF;
+    border-radius: 10px;
+    padding: 7px 14px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background 0.12s, transform 0.12s;
+  }
+  .btn-tinted:hover { background: rgba(0,122,255,0.18); }
+  .btn-tinted:active { transform: scale(0.97); }
+
+  /* ─── typography ──────────────────────────────────────────────────── */
+  .title-1 { font-size: 28px; font-weight: 700; letter-spacing: -0.022em; line-height: 1.14; }
+  .title-2 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.18; }
+  .title-3 { font-size: 20px; font-weight: 600; letter-spacing: -0.018em; line-height: 1.2; }
+  .headline { font-size: 17px; font-weight: 600; letter-spacing: -0.015em; line-height: 1.29; }
+  .body { font-size: 15px; font-weight: 400; letter-spacing: -0.011em; line-height: 1.4; }
+  .callout { font-size: 14px; font-weight: 500; letter-spacing: -0.005em; line-height: 1.4; }
+  .footnote { font-size: 12px; font-weight: 400; letter-spacing: 0; line-height: 1.33; }
+  .caption { font-size: 11px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; line-height: 1.18; }
+  .mono { font-family: "SF Mono", ui-monospace, Menlo, monospace; font-feature-settings: "ss01","ss02"; }
+
+  /* ─── divider ─────────────────────────────────────────────────────── */
+  .divider { height: 1px; background: rgba(60,60,67,0.12); }
+  .divider-subtle { height: 1px; background: rgba(60,60,67,0.06); }
+
+  /* ─── segmented control ──────────────────────────────────────────── */
+  .seg {
+    display: inline-flex;
+    background: rgba(118,118,128,0.12);
+    border-radius: 9px;
+    padding: 2px;
+    gap: 2px;
+  }
+  .seg-item {
+    padding: 5px 14px;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #1D1D1F;
+    transition: background 0.15s ease;
+    white-space: nowrap;
+  }
+  .seg-item.active {
+    background: #FFFFFF;
+    box-shadow: 0 3px 1px rgba(0,0,0,0.04), 0 3px 8px rgba(0,0,0,0.12), 0 0 0 0.5px rgba(0,0,0,0.04);
+  }
+  .seg-item:not(.active):hover { background: rgba(255,255,255,0.4); }
