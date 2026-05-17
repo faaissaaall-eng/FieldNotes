@@ -6,24 +6,54 @@
 var h = React.createElement;
 
 // ── Theme tokens ──────────────────────────────────────────────────────────────
+// Light = "Crimson Light"  (DESIGN.md)
+// Dark  = "Structural Precision"  (DESIGN (1).md)
 const THEMES = {
   light: {
-    blue:'#007AFF', green:'#34C759', orange:'#FF9500', red:'#FF3B30',
-    yellow:'#FFCC00', purple:'#AF52DE', pink:'#FF2D55', teal:'#30B0C7', indigo:'#5856D6',
-    bg:'#F5F5F7', bg2:'#FFFFFF', bg3:'#F2F2F7', surface:'#FFFFFF',
-    label:'#1D1D1F', label2:'#3C3C43', label3:'#8E8E93', label4:'#C7C7CC',
-    sep:'rgba(60,60,67,0.12)', sepStrong:'rgba(60,60,67,0.29)',
-    fill1:'rgba(120,120,128,0.20)', fill2:'rgba(120,120,128,0.16)',
-    fill3:'rgba(120,120,128,0.12)', fill4:'rgba(120,120,128,0.08)',
+    // Primary crimson — buttons, critical badges, focus rings
+    red:    '#DC2626',
+    // Functional accents
+    blue:   '#1d4ed8', green:  '#15803d', orange: '#c2410c',
+    yellow: '#b45309', purple: '#6d28d9', pink:   '#be185d',
+    teal:   '#0e7490', indigo: '#3730a3',
+    // Surfaces — tonal layers (Level 0 → Level 1 → containers)
+    bg:     '#f8f9fa',  // Level 0 floor
+    bg2:    '#ffffff',  // Level 1 panels & cards
+    bg3:    '#f3f4f5',  // sidebars, alternating rows
+    surface:'#ffffff',
+    // Text
+    label:  '#111827',  // primary text
+    label2: '#374151',  // secondary
+    label3: '#4b5563',  // muted / metadata
+    label4: '#9ca3af',  // very muted / disabled
+    // Structure
+    sep:      '#e5e7eb', sepStrong:'#d1d5db',
+    // Fills (hover states, pill backgrounds)
+    fill1: 'rgba(0,0,0,0.07)',   fill2: 'rgba(0,0,0,0.04)',
+    fill3: '#f3f4f5',            fill4: '#e7e8e9',
   },
   dark: {
-    blue:'#0A84FF', green:'#30D158', orange:'#FF9F0A', red:'#FF453A',
-    yellow:'#FFD60A', purple:'#BF5AF2', pink:'#FF375F', teal:'#40C8E0', indigo:'#5E5CE6',
-    bg:'#1C1C1E', bg2:'#2C2C2E', bg3:'#3A3A3C', surface:'#2C2C2E',
-    label:'#F5F5F7', label2:'#EBEBF5', label3:'#8E8E93', label4:'#48484A',
-    sep:'rgba(84,84,88,0.65)', sepStrong:'rgba(84,84,88,0.85)',
-    fill1:'rgba(120,120,128,0.36)', fill2:'rgba(120,120,128,0.32)',
-    fill3:'rgba(120,120,128,0.24)', fill4:'rgba(120,120,128,0.18)',
+    // Primary crimson — same #DC2626 reads clearly on obsidian
+    red:    '#DC2626',
+    // Functional accents (brighter for dark bg)
+    blue:   '#90cdff', green:  '#4ade80', orange: '#fb923c',
+    yellow: '#fbbf24', purple: '#a78bfa', pink:   '#f472b6',
+    teal:   '#22d3ee', indigo: '#818cf8',
+    // Surfaces — obsidian layers
+    bg:     '#0e0e0e',  // Level 0 — deepest
+    bg2:    '#131313',  // Level 1 — main surface
+    bg3:    '#1c1b1b',  // sidebar / secondary panels
+    surface:'#20201f',  // surface-container
+    // Text
+    label:  '#e5e2e1',  // on-surface
+    label2: '#d4d4d4',
+    label3: '#ac8884',  // outline
+    label4: '#5c403c',  // outline-variant
+    // Structure
+    sep:      '#262626', sepStrong:'#404040',
+    // Fills
+    fill1: 'rgba(255,255,255,0.08)', fill2: 'rgba(255,255,255,0.04)',
+    fill3: '#2a2a2a',                fill4: '#353535',
   },
 };
 
@@ -34,9 +64,9 @@ let UI = { ...THEMES.light };
 // (color values use UI object, so this is a getter function)
 function getSEV() {
   return {
-    conforming: { label:'Conforming', color:UI.green,  bg:'rgba(52,199,89,0.12)',  icon:'✓' },
-    minor:      { label:'Minor',      color:UI.orange, bg:'rgba(255,149,0,0.12)',  icon:'!' },
-    critical:   { label:'Critical',   color:UI.red,    bg:'rgba(255,59,48,0.12)',  icon:'✕' },
+    conforming: { label:'Conforming', color:UI.green,  bg:'rgba(21,128,61,0.10)',  icon:'✓' },
+    minor:      { label:'Minor',      color:UI.orange, bg:'rgba(194,65,12,0.10)',  icon:'!' },
+    critical:   { label:'Critical',   color:UI.red,    bg:'rgba(220,38,38,0.10)',  icon:'✕' },
   };
 }
 // Convenience accessor (used heavily in components)
@@ -88,7 +118,7 @@ const SEED_PROJECTS = [
   {
     id:'proj-001', name:'KCI Narrow Body Hangar', client:'Kansas City Airport Authority',
     location:'Kansas City, MO', type:'Cast-in-Place Concrete', status:'active',
-    color:'#007AFF', createdAt:'Mar 14, 2026',
+    color:'#DC2626', createdAt:'Mar 14, 2026',
     punchStatus:{},
     members:[
       { id:'m-001', name:'Abdul Hassan',  role:'Engineer of Record',  email:'a.hassan@struct.com',  access:'editor' },

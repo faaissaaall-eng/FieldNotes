@@ -6,9 +6,14 @@
 function applyTheme(isDark) {
   const t = isDark ? THEMES.dark : THEMES.light;
   Object.assign(UI, t);
+
+  // Toggle CSS class on <html> — this activates the html.theme-dark { } block
+  // in styles.css, which updates all var(--xxx) tokens used in CSS classes.
+  document.documentElement.classList.toggle('theme-dark', isDark);
+  document.documentElement.style.background = t.bg;
+
   const meta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
   if (meta) meta.content = isDark ? 'black-translucent' : 'default';
-  document.documentElement.style.background = UI.bg;
   try { localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light'); } catch {}
 }
 

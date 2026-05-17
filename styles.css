@@ -1,155 +1,283 @@
-/* ─── reset ───────────────────────────────────────────────────────── */
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-  html, body, #root { height: 100%; width: 100%; overflow: hidden; background: #F5F5F7; }
+/* ─── CSS custom properties ─────────────────────────────────────────────────
+   Light mode = :root defaults
+   Dark mode  = .theme-dark overrides (toggled by applyTheme on <html>)
+   ─────────────────────────────────────────────────────────────────────────── */
+:root {
+  --bg:       #f8f9fa;
+  --bg2:      #ffffff;
+  --bg3:      #f3f4f5;
+  --surface:  #ffffff;
+  --label:    #111827;
+  --label2:   #374151;
+  --label3:   #4b5563;
+  --label4:   #9ca3af;
+  --sep:      #e5e7eb;
+  --sep-str:  #d1d5db;
+  --red:      #dc2626;
+  --fill1:    rgba(0,0,0,0.08);
+  --fill2:    rgba(0,0,0,0.05);
+  --fill3:    #f3f4f5;
+  --fill4:    #e7e8e9;
+}
 
-  /* ─── SF Pro stack ────────────────────────────────────────────────── */
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", system-ui, sans-serif;
-    font-feature-settings: "ss01","ss02","cv11";
-    letter-spacing: -0.011em;
-    color: #1D1D1F;
-  }
-  input, textarea, select, button { font-family: inherit; font-feature-settings: inherit; letter-spacing: inherit; }
-  input::placeholder, textarea::placeholder { color: #8E8E93; }
-  button { cursor: pointer; border: none; background: none; }
+/* Dark theme — "Structural Precision" */
+html.theme-dark {
+  --bg:       #0e0e0e;
+  --bg2:      #131313;
+  --bg3:      #1c1b1b;
+  --surface:  #20201f;
+  --label:    #e5e2e1;
+  --label2:   #d4d4d4;
+  --label3:   #ac8884;
+  --label4:   #5c403c;
+  --sep:      #262626;
+  --sep-str:  #404040;
+  --red:      #dc2626;
+  --fill1:    rgba(255,255,255,0.08);
+  --fill2:    rgba(255,255,255,0.04);
+  --fill3:    #2a2a2a;
+  --fill4:    #353535;
+}
 
-  /* ─── scrollbars ──────────────────────────────────────────────────── */
-  ::-webkit-scrollbar { width: 0; height: 0; }
-  .scroll:hover::-webkit-scrollbar { width: 6px; height: 6px; }
-  .scroll:hover::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.18); border-radius: 6px; }
+/* ─── reset ────────────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: var(--bg);
+}
 
-  /* ─── system animations ───────────────────────────────────────────── */
-  @keyframes fadeIn   { from{opacity:0} to{opacity:1} }
-  @keyframes slideUp  { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-  @keyframes scaleIn  { from{opacity:0;transform:scale(0.96)} to{opacity:1;transform:scale(1)} }
-  @keyframes spin     { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
-  @keyframes blink    { 0%,100%{opacity:1} 50%{opacity:0.3} }
-  @keyframes pulse    { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.08);opacity:0.8} }
-  @keyframes sheetUp  { from{opacity:0;transform:translateY(40px) scale(0.98)} to{opacity:1;transform:translateY(0) scale(1)} }
+/* ─── Noto Sans + Noto Serif typography stack ──────────────────────────────── */
+body {
+  font-family: 'Noto Sans', 'Helvetica Neue', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  letter-spacing: 0;
+  color: var(--label);
+}
+input, textarea, select, button {
+  font-family: 'Noto Sans', 'Helvetica Neue', system-ui, sans-serif;
+}
+input::placeholder, textarea::placeholder { color: var(--label4); }
+button { cursor: pointer; border: none; background: none; }
 
-  .fade-in { animation: fadeIn 0.3s ease both; }
-  .slide-up { animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) both; }
-  .scale-in { animation: scaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) both; }
-  .sheet-up { animation: sheetUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both; }
+/* ─── scrollbars ────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 0; height: 0; }
+.scroll:hover::-webkit-scrollbar { width: 5px; height: 5px; }
+.scroll:hover::-webkit-scrollbar-thumb {
+  background: var(--sep-str);
+  border-radius: 0;
+}
 
-  /* ─── press-down feedback ─────────────────────────────────────────── */
-  .pressable { transition: transform 0.12s cubic-bezier(0.4,0,0.2,1), background 0.15s ease, box-shadow 0.15s ease; }
-  .pressable:active { transform: scale(0.975); }
+/* ─── animations ────────────────────────────────────────────────────────────── */
+@keyframes fadeIn  { from{opacity:0}             to{opacity:1}                              }
+@keyframes slideUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+@keyframes scaleIn { from{opacity:0;transform:scale(0.97)}     to{opacity:1;transform:scale(1)}     }
+@keyframes sheetUp { from{opacity:0;transform:translateY(40px) scale(0.98)} to{opacity:1;transform:translateY(0) scale(1)} }
+@keyframes spin    { from{transform:rotate(0deg)} to{transform:rotate(360deg)}             }
+@keyframes blink   { 0%,100%{opacity:1} 50%{opacity:0.3}                                  }
+@keyframes pulse   { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.08);opacity:0.8} }
 
-  /* ─── frosted glass ───────────────────────────────────────────────── */
-  .glass {
-    background: rgba(255,255,255,0.72);
-    -webkit-backdrop-filter: saturate(180%) blur(24px);
-    backdrop-filter: saturate(180%) blur(24px);
-  }
-  .glass-dark {
-    background: rgba(28,28,30,0.72);
-    -webkit-backdrop-filter: saturate(180%) blur(24px);
-    backdrop-filter: saturate(180%) blur(24px);
-  }
+.fade-in  { animation: fadeIn  0.25s ease both; }
+.slide-up { animation: slideUp 0.3s  cubic-bezier(0.16,1,0.3,1) both; }
+.scale-in { animation: scaleIn 0.22s cubic-bezier(0.16,1,0.3,1) both; }
+.sheet-up { animation: sheetUp 0.35s cubic-bezier(0.16,1,0.3,1) both; }
 
-  /* ─── card style ──────────────────────────────────────────────────── */
-  .card {
-    background: #FFFFFF;
-    border-radius: 14px;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 0 0 0.5px rgba(0,0,0,0.06);
-  }
-  .card-elevated {
-    background: #FFFFFF;
-    border-radius: 14px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04), 0 0 0 0.5px rgba(0,0,0,0.06);
-  }
+/* ─── press feedback ────────────────────────────────────────────────────────── */
+.pressable {
+  transition: transform 0.1s ease, background 0.12s ease, border-color 0.12s ease;
+}
+.pressable:active { transform: scale(0.975); }
 
-  /* ─── system inputs ───────────────────────────────────────────────── */
-  .sys-input {
-    width: 100%;
-    background: rgba(118,118,128,0.08);
-    border: none;
-    border-radius: 10px;
-    padding: 10px 14px;
-    font-size: 15px;
-    outline: none;
-    transition: background 0.15s ease, box-shadow 0.15s ease;
-    color: #1D1D1F;
-  }
-  .sys-input:focus {
-    background: #FFFFFF;
-    box-shadow: 0 0 0 3px rgba(0,122,255,0.15), 0 0 0 0.5px rgba(0,122,255,0.8);
-  }
+/* ─── navbar / glass ────────────────────────────────────────────────────────── */
+.glass {
+  background: rgba(248,249,250,0.92);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  backdrop-filter: blur(16px) saturate(140%);
+  border-bottom: 1px solid var(--sep);
+}
+html.theme-dark .glass {
+  background: rgba(19,19,19,0.92);
+}
+.glass-dark {
+  background: rgba(14,14,14,0.92);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  backdrop-filter: blur(16px) saturate(140%);
+  border-bottom: 1px solid var(--sep);
+}
 
-  /* ─── buttons ─────────────────────────────────────────────────────── */
-  .btn-primary {
-    background: #007AFF;
-    color: white;
-    border-radius: 10px;
-    padding: 9px 18px;
-    font-size: 15px;
-    font-weight: 590;
-    letter-spacing: -0.01em;
-    transition: background 0.12s, transform 0.12s;
-  }
-  .btn-primary:hover { background: #0071EB; }
-  .btn-primary:active { transform: scale(0.97); background: #0063D1; }
-  .btn-primary:disabled { background: rgba(0,122,255,0.3); cursor: not-allowed; }
+/* ─── card ──────────────────────────────────────────────────────────────────── */
+/* Level 1: flat border, no radius, no shadow — engineering panel feel */
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--sep);
+  border-radius: 0;
+}
+.card-elevated {
+  background: var(--bg2);
+  border: 1px solid var(--sep-str);
+  border-radius: 0;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+}
 
-  .btn-secondary {
-    background: rgba(118,118,128,0.12);
-    color: #1D1D1F;
-    border-radius: 10px;
-    padding: 9px 18px;
-    font-size: 15px;
-    font-weight: 500;
-    transition: background 0.12s, transform 0.12s;
-  }
-  .btn-secondary:hover { background: rgba(118,118,128,0.18); }
-  .btn-secondary:active { transform: scale(0.97); }
+/* ─── inputs ────────────────────────────────────────────────────────────────── */
+.sys-input {
+  width: 100%;
+  background: var(--bg2);
+  border: 1px solid var(--sep);
+  border-radius: 0;
+  padding: 10px 12px;
+  font-size: 14px;
+  outline: none;
+  color: var(--label);
+  transition: border-color 0.15s ease;
+}
+.sys-input:focus {
+  border-color: var(--red);
+  box-shadow: none;
+}
 
-  .btn-tinted {
-    background: rgba(0,122,255,0.12);
-    color: #007AFF;
-    border-radius: 10px;
-    padding: 7px 14px;
-    font-size: 14px;
-    font-weight: 500;
-    transition: background 0.12s, transform 0.12s;
-  }
-  .btn-tinted:hover { background: rgba(0,122,255,0.18); }
-  .btn-tinted:active { transform: scale(0.97); }
+/* ─── buttons ───────────────────────────────────────────────────────────────── */
 
-  /* ─── typography ──────────────────────────────────────────────────── */
-  .title-1 { font-size: 28px; font-weight: 700; letter-spacing: -0.022em; line-height: 1.14; }
-  .title-2 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.18; }
-  .title-3 { font-size: 20px; font-weight: 600; letter-spacing: -0.018em; line-height: 1.2; }
-  .headline { font-size: 17px; font-weight: 600; letter-spacing: -0.015em; line-height: 1.29; }
-  .body { font-size: 15px; font-weight: 400; letter-spacing: -0.011em; line-height: 1.4; }
-  .callout { font-size: 14px; font-weight: 500; letter-spacing: -0.005em; line-height: 1.4; }
-  .footnote { font-size: 12px; font-weight: 400; letter-spacing: 0; line-height: 1.33; }
-  .caption { font-size: 11px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; line-height: 1.18; }
-  .mono { font-family: "SF Mono", ui-monospace, Menlo, monospace; font-feature-settings: "ss01","ss02"; }
+/* Primary — solid crimson, sharp */
+.btn-primary {
+  background: #dc2626;
+  color: #ffffff;
+  border-radius: 0;
+  border: 2px solid #dc2626;
+  padding: 9px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.btn-primary:hover   { background: #b91c1c; border-color: #b91c1c; }
+.btn-primary:active  { background: #991b1b; border-color: #991b1b; transform: scale(0.975); }
+.btn-primary:disabled { background: rgba(220,38,38,0.35); border-color: transparent; cursor: not-allowed; }
 
-  /* ─── divider ─────────────────────────────────────────────────────── */
-  .divider { height: 1px; background: rgba(60,60,67,0.12); }
-  .divider-subtle { height: 1px; background: rgba(60,60,67,0.06); }
+/* Secondary — outlined, sharp */
+.btn-secondary {
+  background: transparent;
+  color: var(--label);
+  border-radius: 0;
+  border: 1.5px solid var(--label);
+  padding: 9px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.btn-secondary:hover  { background: var(--fill1); }
+.btn-secondary:active { transform: scale(0.975); }
 
-  /* ─── segmented control ──────────────────────────────────────────── */
-  .seg {
-    display: inline-flex;
-    background: rgba(118,118,128,0.12);
-    border-radius: 9px;
-    padding: 2px;
-    gap: 2px;
-  }
-  .seg-item {
-    padding: 5px 14px;
-    border-radius: 7px;
-    font-size: 13px;
-    font-weight: 500;
-    color: #1D1D1F;
-    transition: background 0.15s ease;
-    white-space: nowrap;
-  }
-  .seg-item.active {
-    background: #FFFFFF;
-    box-shadow: 0 3px 1px rgba(0,0,0,0.04), 0 3px 8px rgba(0,0,0,0.12), 0 0 0 0.5px rgba(0,0,0,0.04);
-  }
-  .seg-item:not(.active):hover { background: rgba(255,255,255,0.4); }
+/* Tinted — muted crimson tint */
+.btn-tinted {
+  background: rgba(220,38,38,0.08);
+  color: #dc2626;
+  border-radius: 0;
+  border: 1px solid rgba(220,38,38,0.25);
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: background 0.12s ease;
+}
+.btn-tinted:hover  { background: rgba(220,38,38,0.14); }
+.btn-tinted:active { transform: scale(0.975); }
+
+/* ─── typography ─────────────────────────────────────────────────────────────── */
+/* Headings → Noto Serif (authority, precision) */
+.title-1 {
+  font-family: 'Noto Serif', Georgia, serif;
+  font-size: 28px; font-weight: 700;
+  letter-spacing: -0.02em; line-height: 1.2;
+}
+.title-2 {
+  font-family: 'Noto Serif', Georgia, serif;
+  font-size: 22px; font-weight: 600;
+  letter-spacing: -0.01em; line-height: 1.25;
+}
+.title-3 {
+  font-family: 'Noto Serif', Georgia, serif;
+  font-size: 18px; font-weight: 600;
+  letter-spacing: 0; line-height: 1.3;
+}
+
+/* Body / UI → Noto Sans (clarity, precision) */
+.headline {
+  font-family: 'Noto Sans', sans-serif;
+  font-size: 15px; font-weight: 700;
+  letter-spacing: 0; line-height: 1.35;
+}
+.body {
+  font-family: 'Noto Sans', sans-serif;
+  font-size: 15px; font-weight: 400;
+  letter-spacing: 0; line-height: 1.6;
+}
+.callout {
+  font-family: 'Noto Sans', sans-serif;
+  font-size: 14px; font-weight: 500;
+  letter-spacing: 0; line-height: 1.5;
+}
+.footnote {
+  font-family: 'Noto Sans', sans-serif;
+  font-size: 12px; font-weight: 400;
+  letter-spacing: 0; line-height: 1.4;
+}
+
+/* Engineering annotation label — uppercase, tracked */
+.caption {
+  font-family: 'Noto Sans', sans-serif;
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+
+.mono {
+  font-family: 'Courier New', ui-monospace, monospace;
+  font-size: 13px;
+  letter-spacing: 0.03em;
+}
+
+/* ─── dividers ──────────────────────────────────────────────────────────────── */
+.divider        { height: 1px; background: var(--sep); }
+.divider-subtle { height: 1px; background: var(--fill3); }
+
+/* ─── segmented control ─────────────────────────────────────────────────────── */
+.seg {
+  display: inline-flex;
+  background: var(--fill3);
+  border: 1px solid var(--sep);
+  border-radius: 0;
+  padding: 2px;
+  gap: 2px;
+}
+.seg-item {
+  padding: 5px 14px;
+  border-radius: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--label3);
+  transition: background 0.12s ease, color 0.12s ease;
+  white-space: nowrap;
+}
+.seg-item.active {
+  background: var(--bg2);
+  color: var(--label);
+  border: 1px solid var(--sep-str);
+}
+.seg-item:not(.active):hover {
+  background: var(--fill2);
+  color: var(--label2);
+}
