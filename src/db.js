@@ -17,6 +17,9 @@ function openIDB() {
       if (!db.objectStoreNames.contains(IDB_QUEUE)) {
         db.createObjectStore(IDB_QUEUE, { keyPath:'id', autoIncrement:true });
       }
+      if (!db.objectStoreNames.contains(IDB_DRAWINGS)) {
+        db.createObjectStore(IDB_DRAWINGS); // manual keys — stores raw PDF ArrayBuffers
+      }
     };
     req.onsuccess = e => { _idb = e.target.result; resolve(_idb); };
     req.onerror  = e => reject(e.target.error);
@@ -85,4 +88,17 @@ async function getLocalPhotoUrl(key) {
 /** Delete a local photo blob */
 async function deleteLocalPhoto(key) {
   await idbDelete(IDB_STORE, key);
+}
+
+// ── Drawing PDF helpers ────────────────────────────────────────────────────────
+
+/** Save a raw PDF ArrayBuffer to IndexedDB, keyed by drawingId */
+async function saveDrawingPDF(key, arrayBuffer) {
+  await idbPut(IDB_DRAWINGS, key, arrayBuffer);
+}
+
+/** Retrieve a raw PDF ArrayBuffer from IndexedDB, or null if missing */
+async function getDrawingPDF(key) {
+  const data = await idbGet(IDB_DRAWINGS, key);
+  return data || null;
 }

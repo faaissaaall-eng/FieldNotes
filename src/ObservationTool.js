@@ -606,14 +606,27 @@ function ODStatusBar({ od }) {
 // The main visit inspection screen.
 function ObservationTool({ proj, visit, onBack, onSaveVisit, dark, toggleTheme, od }) {
   // Drawing pages — from uploaded PDFs, or placeholder sheets
-  const rawPages = visit?.drawings ? visit.drawings.flatMap(d => d.pages) : [];
+  const rawPages = visit?.drawings ? visit.drawings.flatMap(d =>
+    d.pages.map(p => ({
+      ...p,
+      idbKey:       d.idbKey || null,
+      thumbnailUrl: p.pageNum === 1 ? (d.thumbnailUrl || null) : null,
+    }))
+  ) : [];
   const hasRealDrawings = rawPages.length > 0;
   const pages = hasRealDrawings
-    ? rawPages.map(p => ({ id:`pg-${p.pageNum}-${p.label}`, label:p.label, imageDataUrl:p.imageDataUrl }))
+    ? rawPages.map(p => ({
+        id:           `pg-${p.pageNum}-${p.label}`,
+        label:        p.label,
+        imageDataUrl: p.imageDataUrl || null,   // backward-compat with old visits
+        idbKey:       p.idbKey       || null,
+        pageNum:      p.pageNum,
+        thumbnailUrl: p.thumbnailUrl || null,
+      }))
     : [
-        { id:'S-101', label:'S-101 — Foundation Plan',  imageDataUrl:null },
-        { id:'S-201', label:'S-201 — Framing Plan L1',  imageDataUrl:null },
-        { id:'S-301', label:'S-301 — Sections A–D',     imageDataUrl:null },
+        { id:'S-101', label:'S-101 — Foundation Plan',  imageDataUrl:null, idbKey:null, pageNum:null, thumbnailUrl:null },
+        { id:'S-201', label:'S-201 — Framing Plan L1',  imageDataUrl:null, idbKey:null, pageNum:null, thumbnailUrl:null },
+        { id:'S-301', label:'S-301 — Sections A–D',     imageDataUrl:null, idbKey:null, pageNum:null, thumbnailUrl:null },
       ];
 
   // ── State ──────────────────────────────────────────────────────────────────
@@ -642,6 +655,10 @@ function ObservationTool({ proj, visit, onBack, onSaveVisit, dark, toggleTheme, 
   const [contacts,       setContacts]       = useStateOT(visit?.contacts || []);
   const [pendingPhoto,   setPendingPhoto]   = useStateOT(null);
   const [reportDone,     setReportDone]     = useStateOT(false);
+
+  // On-demand PDF page rendering
+  const [renderedPageUrl, setRenderedPageUrl] = useStateOT(null);
+  const renderCacheRef = useRefOT({});
 
   // Voice note state
   const [vnRec,   setVnRec]   = useStateOT(false);
@@ -696,12 +713,12 @@ function ObservationTool({ proj, visit, onBack, onSaveVisit, dark, toggleTheme, 
     return () => window.removeEventListener('od-photo-uploaded', handler);
   }, []);
 
-  // Upload drawing pages to OneDrive when signed in
+  // Upload legacy drawing pages (imageDataUrl) to OneDrive when signed in
   useEffectOT(() => {
     if (!od?.signedIn || !pages || pages.length === 0) return;
     const san = s => s.replace(/[/\\?%*:|"<>]/g, '-').trim();
     pages.forEach(pg => {
-      if (!pg.imageDataUrl) return;
+      if (!pg.imageDataUrl) return; // new PDF format has no per-page imageDataUrl
       const remotePath = `FieldStruct/${san(proj.name)}/${san(visit.date)}/Drawings/${san(pg.label)}.jpg`;
       fetch(pg.imageDataUrl).then(r => r.blob()).then(blob => uploadToOD(blob, remotePath)).catch(() => {});
     });
@@ -880,6 +897,44 @@ function ObservationTool({ proj, visit, onBack, onSaveVisit, dark, toggleTheme, 
   const currentShapes   = markupShapes.filter(s => s.sheetId === currentSheetId);
   const currentStrokes  = pencilStrokes[currentSheetId] || [];
   const currentObs      = observations.filter(o => o.drawing === currentSheetId);
+
+  // Render the current PDF page on-demand from IndexedDB
+  // (placed after currentPage is computed so the dependency values are available)
+  useEffectOT(() => {
+    if (!currentPage?.idbKey) {
+      setRenderedPageUrl(null);
+      return;
+    }
+    const cacheKey = `${currentPage.idbKey}:${currentPage.pageNum}`;
+    if (renderCacheRef.current[cacheKey]) {
+      setRenderedPageUrl(renderCacheRef.current[cacheKey]);
+      return;
+    }
+    let cancelled = false;
+    setRenderedPageUrl(null);
+    (async () => {
+      try {
+        const buf = await getDrawingPDF(currentPage.idbKey);
+        if (cancelled || !buf) return;
+        const doc = await pdfjsLib.getDocument({ data: new Uint8Array(buf instanceof ArrayBuffer ? buf : buf) }).promise;
+        if (cancelled) return;
+        const page = await doc.getPage(currentPage.pageNum);
+        if (cancelled) return;
+        const viewport = page.getViewport({ scale: 2 });
+        const canvas = document.createElement('canvas');
+        canvas.width  = viewport.width;
+        canvas.height = viewport.height;
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+        if (cancelled) return;
+        const url = canvas.toDataURL('image/jpeg', 0.9);
+        renderCacheRef.current[cacheKey] = url;
+        setRenderedPageUrl(url);
+      } catch (e) {
+        console.warn('PDF render error', e);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [currentPage?.idbKey, currentPage?.pageNum]);
 
   // Blueprint SVG placeholder (when no drawing image)
   function blueprintSVG() {
@@ -1060,8 +1115,8 @@ function ObservationTool({ proj, visit, onBack, onSaveVisit, dark, toggleTheme, 
                       boxShadow: sel ? `0 0 0 3px rgba(0,122,255,0.2)` : 'none',
                     },
                   },
-                    pg.imageDataUrl
-                      ? h('img', { src:pg.imageDataUrl, alt:'', style:{ width:'100%', height:'100%', objectFit:'cover' } })
+                    (pg.imageDataUrl || pg.thumbnailUrl)
+                      ? h('img', { src:pg.imageDataUrl || pg.thumbnailUrl, alt:'', style:{ width:'100%', height:'100%', objectFit:'cover' } })
                       : h('div', { style:{ width:'100%', height:'100%', background:'#0a2040',
                           display:'flex', alignItems:'center', justifyContent:'center', fontSize:28 } }, '📐'),
                     h('div', { style:{ position:'absolute', bottom:0, left:0, right:0,
@@ -1145,10 +1200,36 @@ function ObservationTool({ proj, visit, onBack, onSaveVisit, dark, toggleTheme, 
             cursor: addMode && !markupTool ? 'crosshair' : markupTool ? 'crosshair' : pencilMode ? 'crosshair' : 'default',
           },
         },
-          // Background: real drawing image or blueprint placeholder
-          currentPage?.imageDataUrl
-            ? h('img', { src:currentPage.imageDataUrl, alt:'', style:{ width:'100%', height:'100%', objectFit:'contain', display:'block' } })
-            : blueprintSVG(),
+          // Background: rendered PDF page, legacy imageDataUrl, loading state, or blueprint placeholder
+          (() => {
+            const bgUrl = renderedPageUrl || currentPage?.imageDataUrl;
+            if (bgUrl) {
+              return h('img', { src:bgUrl, alt:'', style:{ width:'100%', height:'100%', objectFit:'contain', display:'block' } });
+            }
+            if (currentPage?.idbKey && !renderedPageUrl) {
+              // PDF is stored in IDB but not yet rendered — show loading overlay on top of blueprint
+              return h('div', { style:{ position:'absolute', inset:0 } },
+                blueprintSVG(),
+                h('div', {
+                  style:{
+                    position:'absolute', inset:0, display:'flex', flexDirection:'column',
+                    alignItems:'center', justifyContent:'center', gap:10,
+                    background:'rgba(10,32,64,0.75)',
+                  },
+                },
+                  h('div', {
+                    style:{
+                      width:28, height:28, border:'3px solid rgba(255,255,255,0.2)',
+                      borderTopColor:'white', borderRadius:'50%',
+                      animation:'spin 0.8s linear infinite',
+                    },
+                  }),
+                  h('div', { style:{ color:'rgba(255,255,255,0.5)', fontSize:13 } }, 'Loading drawing…'),
+                )
+              );
+            }
+            return blueprintSVG();
+          })(),
 
           // SVG overlay layer
           h('svg', {

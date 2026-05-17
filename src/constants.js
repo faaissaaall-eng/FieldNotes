@@ -101,10 +101,11 @@ const THEME_KEY = 'fieldstruct_theme';
 const SUPER_KEY = projId => `super_name_${projId}`;
 
 // ── IndexedDB config ──────────────────────────────────────────────────────────
-const IDB_NAME  = 'fieldstruct_photos';
-const IDB_VER   = 1;
-const IDB_STORE = 'photos';    // keyPath: none (manual keys)
-const IDB_QUEUE = 'sync_queue'; // keyPath: 'id', autoIncrement: true
+const IDB_NAME     = 'fieldstruct_photos';
+const IDB_VER      = 2;                   // bumped to add drawings store
+const IDB_STORE    = 'photos';            // keyPath: none (manual keys)
+const IDB_QUEUE    = 'sync_queue';        // keyPath: 'id', autoIncrement: true
+const IDB_DRAWINGS = 'drawings';          // keyPath: none — stores raw PDF ArrayBuffers
 
 // ── OneDrive / MSAL config ────────────────────────────────────────────────────
 const OD_CLIENT_ID = 'be5ac02d-4551-45f3-8a54-1fc38ed97f0b';
