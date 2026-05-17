@@ -201,24 +201,14 @@ function HomeScreen({ projects, onOpenProject, onNewProject, onOpenVisit, dark, 
           borderBottom:`0.5px solid ${UI.sep}`,
         },
       },
-        // App icon
-        h('div', {
-          style:{
-            width:34, height:34, borderRadius:9, flexShrink:0,
-            background:'linear-gradient(135deg,#007AFF,#5856D6)',
-            display:'flex', alignItems:'center', justifyContent:'center',
-          },
-        },
-          h('svg', { width:18, height:18, viewBox:'0 0 24 24', fill:'none',
-            stroke:'white', strokeWidth:2.5, strokeLinecap:'round' },
-            h('rect', { x:3, y:3, width:18, height:18, rx:3 }),
-            h('line', { x1:9, y1:9, x2:15, y2:9 }),
-            h('line', { x1:9, y1:13, x2:15, y2:13 }),
-            h('line', { x1:9, y1:17, x2:12, y2:17 }),
-          )
-        ),
+        // App logo
+        h('img', {
+          src: 'logo.png',
+          alt: 'FieldNotes',
+          style:{ width:36, height:36, borderRadius:8, flexShrink:0, objectFit:'cover' },
+        }),
         h('div', { style:{ flex:1 } },
-          h('div', { style:{ fontSize:15, fontWeight:700, color:UI.label } }, 'FieldStruct'),
+          h('div', { style:{ fontSize:15, fontWeight:700, color:UI.label } }, 'FieldNotes'),
           h('div', { style:{ fontSize:11, color:UI.label3 } }, 'Field Inspection'),
         ),
         // Theme toggle
