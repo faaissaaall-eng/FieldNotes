@@ -227,15 +227,15 @@ function HomeScreen({ projects, onOpenProject, onNewProject, onOpenVisit, onNewV
       // ── Top bar ────────────────────────────────────────────────────────────
       h('div', {
         style: {
-          display: 'flex', alignItems: 'center', gap: 16, padding: '0 24px',
-          height: 52, flexShrink: 0,
+          display: 'flex', alignItems: 'center', gap: 14, padding: '0 20px',
+          height: 60, flexShrink: 0,
           background: dark ? 'rgba(19,19,19,0.94)' : 'rgba(248,249,250,0.94)',
           borderBottom: `1px solid ${T.rule}`,
           backdropFilter: 'saturate(180%) blur(20px)',
         },
       },
-        h(FSLogo, { size: 30 }),
-        h(FNWordmark, { size: 17, T }),
+        h(FSLogo, { size: 44 }),
+        h(FNWordmark, { size: 19, T }),
         h('div', { style: { ...S.caption, marginLeft: 4 } }, 'FIELD OBSERVATIONS'),
         h('div', { style: { flex: 1 } }),
 
