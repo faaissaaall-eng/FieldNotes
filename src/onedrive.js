@@ -8,30 +8,51 @@ let _odAccount  = null;  // currently signed-in AccountInfo
 let _syncRunning = false; // mutex — prevents concurrent sync runs
 
 // ── MSAL initialisation ────────────────────────────────────────────────────────
+// _redirectHandled guards against running handleRedirectPromise more than once
+let _redirectHandled = false;
+// Expose the redirect result so useOneDrive can react to a completed login redirect
+let _redirectResult  = null;
+
 async function getMSAL() {
   if (_msalApp) return _msalApp;
+
+  console.log('[MSAL] Initialising. redirectUri =', OD_REDIRECT);
+
   _msalApp = new msal.PublicClientApplication({
     auth: {
       clientId:    OD_CLIENT_ID,
       authority:   `https://login.microsoftonline.com/${OD_TENANT_ID}`,
       redirectUri: OD_REDIRECT,
     },
-    cache: { cacheLocation:'localStorage', storeAuthStateInCookie:false },
+    cache: { cacheLocation: 'localStorage', storeAuthStateInCookie: true },
   });
   await _msalApp.initialize();
-  // Handle any outstanding redirect flow
-  try {
-    const result = await _msalApp.handleRedirectPromise();
-    if (result && result.account) {
-      _odAccount = result.account;
-      _msalApp.setActiveAccount && _msalApp.setActiveAccount(result.account);
+
+  // Handle the redirect result exactly once per page load
+  if (!_redirectHandled) {
+    _redirectHandled = true;
+    try {
+      const result = await _msalApp.handleRedirectPromise();
+      if (result && result.account) {
+        _redirectResult = result;
+        _odAccount = result.account;
+        _msalApp.setActiveAccount && _msalApp.setActiveAccount(result.account);
+        console.log('[MSAL] Redirect login complete:', result.account.username);
+      }
+    } catch (e) {
+      console.error('[MSAL] handleRedirectPromise error:', e);
     }
-  } catch {}
-  // Fall back to cached session
+  }
+
+  // Fall back to any cached session
   if (!_odAccount) {
     const accounts = _msalApp.getAllAccounts();
-    if (accounts.length > 0) _odAccount = accounts[0];
+    if (accounts.length > 0) {
+      _odAccount = accounts[0];
+      _msalApp.setActiveAccount && _msalApp.setActiveAccount(_odAccount);
+    }
   }
+
   return _msalApp;
 }
 
@@ -46,21 +67,21 @@ async function getODUser() {
 }
 
 // ── Authentication actions ─────────────────────────────────────────────────────
+// Uses loginRedirect (full-page redirect) — more reliable than popup on hosted
+// static apps. The result is handled by handleRedirectPromise() in getMSAL().
 async function signInOD() {
   const app = await getMSAL();
-  const result = await app.loginPopup({ scopes: OD_SCOPES, redirectUri: OD_REDIRECT });
-  if (result && result.account) {
-    _odAccount = result.account;
-    app.setActiveAccount && app.setActiveAccount(result.account);
-  }
+  // loginRedirect navigates away; no return value — result lands in getMSAL()
+  // on the next page load via handleRedirectPromise.
+  await app.loginRedirect({ scopes: OD_SCOPES, redirectUri: OD_REDIRECT });
 }
 
 async function signOutOD() {
   const app = await getMSAL();
   const accounts = app.getAllAccounts();
   if (accounts.length > 0) {
-    await app.logoutRedirect({ account: accounts[0] });
     _odAccount = null;
+    await app.logoutRedirect({ account: accounts[0], postLogoutRedirectUri: OD_REDIRECT });
   }
 }
 
@@ -211,14 +232,16 @@ function useOneDrive() {
   }
 
   useEffectOD(() => {
-    refresh();
+    // getMSAL() handles handleRedirectPromise internally; calling refresh() after
+    // it resolves ensures the hook state reflects any just-completed redirect login.
+    getMSAL().then(() => refresh()).catch(() => {});
 
     // Auto-sync when coming online
     const onOnline = () => triggerSync();
     window.addEventListener('online', onOnline);
 
-    // Attempt sync shortly after mount if already online
-    const timer = navigator.onLine ? setTimeout(triggerSync, 1500) : null;
+    // Attempt sync shortly after mount if already signed in
+    const timer = navigator.onLine ? setTimeout(triggerSync, 2000) : null;
 
     return () => {
       window.removeEventListener('online', onOnline);
@@ -230,13 +253,17 @@ function useOneDrive() {
     setLoading(true);
     setError(null);
     try {
+      // loginRedirect navigates away — the page will reload after Microsoft
+      // auth completes and getMSAL() / handleRedirectPromise will finish the flow.
       await signInOD();
+      // If we reach here it means redirect didn't trigger (e.g. already signed in)
       await refresh();
     } catch (e) {
+      console.error('[MSAL] signIn error:', e);
       setError(String(e));
-    } finally {
       setLoading(false);
     }
+    // Don't setLoading(false) on success — the page is navigating away
   }
 
   async function signOut() {
