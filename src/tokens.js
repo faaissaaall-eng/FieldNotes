@@ -84,14 +84,29 @@ function makeFNStyles(T, isDark) {
   };
 }
 
-// ── FSLogo — structural grid mark ────────────────────────────────────────────
+// ── FSLogo — theme-aware logo mark ───────────────────────────────────────────
 function FSLogo({ size = 28 }) {
-  const { T } = React.useContext(FNThemeContext);
+  const { isDark } = React.useContext(FNThemeContext);
   return h('img', {
-    src: 'logo.png',
+    src: isDark ? 'logo-dark.png' : 'logo-light.png',
     alt: 'FieldNotes',
-    style: { width: size, height: size, borderRadius: 6, objectFit: 'cover', display: 'block', flexShrink: 0 },
+    style: { width: size, height: size, objectFit: 'contain', display: 'block', flexShrink: 0 },
   });
+}
+
+// ── FNWordmark — "Field" dark + "Notes" crimson ───────────────────────────────
+function FNWordmark({ size = 17, T }) {
+  return h('div', {
+    style: {
+      display: 'inline-flex', alignItems: 'baseline',
+      fontFamily: FS_FONT_SERIF, fontWeight: 700,
+      fontSize: size, letterSpacing: '-0.01em',
+      lineHeight: 1,
+    },
+  },
+    h('span', { style: { color: T.ink } }, 'Field'),
+    h('span', { style: { color: T.primary } }, 'Notes'),
+  );
 }
 
 // ── StatusDot ─────────────────────────────────────────────────────────────────
@@ -152,6 +167,7 @@ window.FS_FONT_SERIF  = FS_FONT_SERIF;
 window.FS_FONT_UI     = FS_FONT_UI;
 window.FS_FONT_MONO   = FS_FONT_MONO;
 window.FSLogo         = FSLogo;
+window.FNWordmark     = FNWordmark;
 window.StatusDot      = StatusDot;
 window.SeverityPill   = SeverityPill;
 window.FNAvatar       = FNAvatar;

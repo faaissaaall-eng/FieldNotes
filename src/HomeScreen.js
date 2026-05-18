@@ -235,12 +235,7 @@ function HomeScreen({ projects, onOpenProject, onNewProject, onOpenVisit, onNewV
         },
       },
         h(FSLogo, { size: 30 }),
-        h('div', {
-          style: {
-            fontFamily: FS_FONT_SERIF, fontWeight: 700, fontSize: 17,
-            letterSpacing: '-0.01em', color: T.ink,
-          },
-        }, 'FieldNotes'),
+        h(FNWordmark, { size: 17, T }),
         h('div', { style: { ...S.caption, marginLeft: 4 } }, 'FIELD OBSERVATIONS'),
         h('div', { style: { flex: 1 } }),
 
