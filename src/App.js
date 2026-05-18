@@ -91,6 +91,7 @@ function App() {
       onOpenProject: projId => openProject(projId),
       onNewProject:  () => setShowNewProject(true),
       onOpenVisit:   (projId, visitId) => openVisit(projId, visitId),
+      onNewVisit:    projId => openSetup(projId),
       dark: isDark, toggleTheme, od,
     }),
 
@@ -107,7 +108,7 @@ function App() {
     // ── New visit setup wizard ────────────────────────────────────────────────
     screen === 'setup' && activeProject && h(NewVisitSetup, {
       proj: activeProject,
-      onBack: () => setScreen('project'),
+      onBack: () => setScreen('home'),
       onComplete: ({ info, drawings }) => {
         const newVisit = {
           id: uid(), ...info, status:'in-progress',

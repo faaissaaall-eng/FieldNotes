@@ -1,385 +1,616 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// HomeScreen.js — HomeScreen (sidebar + project panel), ProjectDetail, VisitRow
+// HomeScreen.js — Three-panel home dashboard
+//   Left sidebar: project list + quick filters + OneDrive status
+//   Main: selected project header, emergent findings, visit cards
+//   Right rail: team, activity feed, deadline
 // ─────────────────────────────────────────────────────────────────────────────
-const { useState: useStateHS } = React;
+const { useState: useStateHS, useContext: useContextHS } = React;
 
-// ── VisitRow ───────────────────────────────────────────────────────────────────
-// One visit entry in the project detail visit list.
-function VisitRow({ visit, proj, onOpen }) {
-  const [hover, setHover] = useStateHS(false);
-  const hasCrit = visit.critCount > 0;
+// ── Avatar colour map (initials → colour) ─────────────────────────────────────
+const AVATAR_COLORS = {
+  AH: '#5B4DAB', MF: '#A6492E', SC: '#2F6E5C',
+  TB: '#1a6b8a', default: '#374151',
+};
+function avatarColor(initials) { return AVATAR_COLORS[initials] || AVATAR_COLORS.default; }
+
+// ── HomeProjRow — sidebar project button ──────────────────────────────────────
+function HomeProjRow({ proj, active, onClick }) {
+  const { T } = useContextHS(window.FNThemeContext);
+  const critCount = proj.visits.reduce((n, v) => n + (v.critCount || 0), 0);
+  // Derive short code from project name
+  const code = proj.id.toUpperCase().replace('PROJ-', 'P-');
+  return h('button', {
+    onClick,
+    style: {
+      display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
+      width: '100%', padding: '9px 10px', borderRadius: 0, marginBottom: 2,
+      background: active ? T.surface : 'transparent',
+      border: active ? `1px solid ${T.rule}` : '1px solid transparent',
+      gap: 3, cursor: 'pointer', textAlign: 'left',
+    },
+  },
+    h('div', { style: { display: 'flex', alignItems: 'center', width: '100%', gap: 8 } },
+      h('span', {
+        style: {
+          fontFamily: FS_FONT_MONO, fontSize: 10, fontWeight: 600,
+          color: T.muted, letterSpacing: '0.06em', flex: 1,
+        },
+      }, proj.type ? proj.type.split(' ')[0].toUpperCase().slice(0, 10) : code),
+      critCount > 0 && h('span', {
+        style: {
+          fontFamily: FS_FONT_MONO, fontSize: 10, fontWeight: 700,
+          color: T.red, background: T.redSoft, padding: '1px 5px',
+        },
+      }, `${critCount}!`),
+    ),
+    h('div', { style: { fontSize: 13, fontWeight: 600, color: T.ink, lineHeight: 1.3 } }, proj.name),
+  );
+}
+
+// ── HomeEmergentBanner — one critical finding row ─────────────────────────────
+function HomeEmergentBanner({ obs, resolved, onResolve, onOpen }) {
+  const { T } = useContextHS(window.FNThemeContext);
+  const accent = resolved ? T.green : T.red;
+  const soft   = resolved ? T.greenSoft : T.redSoft;
   return h('div', {
-    onClick: onOpen,
+    style: {
+      borderLeft: `3px solid ${accent}`,
+      border: `1px solid ${soft}`, borderLeftWidth: 3,
+      padding: '11px 14px', background: T.surface,
+      display: 'flex', alignItems: 'center', gap: 12,
+      opacity: resolved ? 0.6 : 1, transition: 'opacity 0.2s',
+      marginBottom: 4,
+    },
+  },
+    h(SeverityPill, { level: resolved ? 'resolved' : 'emergent' }),
+    h('div', { style: { flex: 1, minWidth: 0 } },
+      h('div', {
+        style: {
+          fontSize: 13, fontWeight: 600, marginBottom: 2, lineHeight: 1.35, color: T.ink,
+          textDecoration: resolved ? 'line-through' : 'none',
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        },
+      }, obs.note),
+      h('div', { style: { fontSize: 11, color: T.muted, lineHeight: 1.4 } },
+        `${obs.category || 'General'} · ${obs.time || ''}`
+      ),
+    ),
+    !resolved && h('button', {
+      onClick: onOpen,
+      style: {
+        padding: '6px 12px', background: T.red, color: '#fff',
+        border: 'none', fontSize: 12, fontWeight: 700,
+        fontFamily: FS_FONT_UI, cursor: 'pointer', flexShrink: 0,
+      },
+    }, 'Open'),
+    !resolved && h('button', {
+      onClick: onResolve,
+      style: {
+        padding: '6px 12px', background: T.surface,
+        color: T.red, border: `1px solid ${T.red}`,
+        fontSize: 12, fontWeight: 700,
+        fontFamily: FS_FONT_UI, cursor: 'pointer', flexShrink: 0,
+      },
+    }, 'Resolve'),
+  );
+}
+
+// ── HomeVisitCard — one visit row in the main panel ──────────────────────────
+function HomeVisitCard({ visit, onClick }) {
+  const { T } = useContextHS(window.FNThemeContext);
+  const [hover, setHover] = useStateHS(false);
+  const crew = (visit.sharedWith || []).map(id => {
+    // Try to find initials from contacts or use the id
+    const parts = id.split('-');
+    return parts[parts.length - 1].toUpperCase().slice(0, 2);
+  });
+  const crit = (visit.critCount || 0) > 0;
+
+  return h('button', {
+    onClick,
     onMouseEnter: () => setHover(true),
     onMouseLeave: () => setHover(false),
     style: {
-      display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px',
-      borderRadius: 12, cursor: 'pointer',
-      background: hover ? UI.fill4 : 'transparent',
-      transition: 'background 0.15s',
+      display: 'flex', alignItems: 'stretch', width: '100%',
+      background: hover ? T.paperAlt : T.surface,
+      border: `1px solid ${T.rule}`,
+      marginBottom: 6, overflow: 'hidden', textAlign: 'left',
+      cursor: 'pointer', transition: 'background 0.15s',
     },
   },
-    // Icon
+    // Date / time / weather column
     h('div', {
       style: {
-        width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-        background: hasCrit ? 'rgba(255,59,48,0.12)' : 'rgba(52,199,89,0.12)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        width: 140, padding: '14px 16px', borderRight: `1px solid ${T.rule}`,
+        background: T.paperAlt, flexShrink: 0,
+        display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 3,
       },
     },
-      h('svg', { width:20, height:20, viewBox:'0 0 24 24', fill:'none',
-        stroke: hasCrit ? UI.red : UI.green, strokeWidth:2, strokeLinecap:'round' },
-        h('rect', { x:3, y:4, width:18, height:18, rx:2 }),
-        h('line', { x1:16, y1:2, x2:16, y2:6 }),
-        h('line', { x1:8,  y1:2, x2:8,  y2:6 }),
-        h('line', { x1:3,  y1:10, x2:21, y2:10 }),
-      )
-    ),
-    // Details
-    h('div', { style:{ flex:1, minWidth:0 } },
-      h('div', { style:{ fontSize:15, fontWeight:600, color:UI.label } },
-        visit.date
-      ),
-      h('div', { style:{ fontSize:13, color:UI.label3, marginTop:2 } },
-        `${visit.weather || ''} · ${visit.obsCount} observation${visit.obsCount !== 1 ? 's' : ''}`
-      ),
-    ),
-    // Badges
-    h('div', { style:{ display:'flex', alignItems:'center', gap:8 } },
-      hasCrit && h(Chip, { label:`${visit.critCount} critical`, tone:'red' }),
-      h('svg', { width:16, height:16, viewBox:'0 0 24 24', fill:'none',
-        stroke:UI.label4, strokeWidth:2.5, strokeLinecap:'round' },
-        h('polyline', { points:'9 18 15 12 9 6' })
-      )
-    )
-  );
-}
-
-// ── ProjectDetail ──────────────────────────────────────────────────────────────
-// Right-side panel showing the selected project's details and visits.
-function ProjectDetail({ proj, onOpenVisit, onOpenProject }) {
-  if (!proj) {
-    // Empty state
-    return h('div', {
-      style: {
-        flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        flexDirection: 'column', gap: 12, color: UI.label4,
-      },
-    },
-      h('div', { style:{ fontSize:48 } }, '📋'),
-      h('div', { style:{ fontSize:17, fontWeight:600 } }, 'Select a project'),
-      h('div', { style:{ fontSize:14 } }, 'Choose a project from the sidebar to view details'),
-    );
-  }
-
-  const visibleMembers = proj.members.slice(0, 3);
-  const critCount = proj.visits.reduce((n, v) => n + (v.critCount || 0), 0);
-
-  return h('div', {
-    style: { flex:1, display:'flex', flexDirection:'column', overflow:'hidden' },
-  },
-    // Header bar
-    h('div', {
-      className: 'glass',
-      style: {
-        height:52, display:'flex', alignItems:'center', justifyContent:'space-between',
-        padding:'0 20px', borderBottom:`0.5px solid ${UI.sep}`, flexShrink:0,
-      },
-    },
-      h('div', null,
-        h('div', { style:{ fontSize:11, fontWeight:500, color:UI.label3, letterSpacing:'0.05em', textTransform:'uppercase' } }, 'Project'),
-        h('div', { style:{ fontSize:15, fontWeight:600, color:UI.label } }, proj.name),
-      ),
-      h('div', { style:{ display:'flex', gap:8 } },
-        h('button', {
-          onClick: onOpenProject, className:'btn-secondary pressable',
-          style:{ padding:'7px 14px', fontSize:13 },
-        }, 'Manage'),
-        h('button', {
-          onClick: () => onOpenVisit(null), className:'btn-primary pressable',
-          style:{ padding:'7px 14px', fontSize:13 },
-        }, '+ New Visit'),
-      )
-    ),
-    // Scrollable body
-    h('div', { className:'scroll', style:{ flex:1, overflowY:'auto', padding:'28px 32px' } },
-      h('div', { style:{ maxWidth:760, margin:'0 auto' } },
-        // Project title block
-        h('div', { style:{ marginBottom:24 } },
-          h('div', { className:'caption', style:{ color:UI.label3, marginBottom:6 } }, proj.type),
-          h('h1', { className:'title-1', style:{ color:UI.label, marginBottom:6 } }, proj.name),
-          h('div', { style:{ fontSize:14, color:UI.label3 } },
-            `${proj.client} · ${proj.location}`
-          ),
-        ),
-        // Stats row
-        h('div', { style:{ display:'flex', gap:12, marginBottom:28 } },
-          ...[
-            { label:'Site Visits',    value:proj.visits.length, color:UI.blue   },
-            { label:'Team Members',   value:proj.members.length, color:UI.purple },
-            { label:'Open Critical',  value:critCount,           color:UI.red    },
-          ].map(s => h('div', {
-            key: s.label, className:'card',
-            style: { flex:1, padding:'14px 16px', textAlign:'center' },
-          },
-            h('div', { style:{ fontSize:28, fontWeight:700, color:s.color } }, s.value),
-            h('div', { style:{ fontSize:12, color:UI.label3, marginTop:2 } }, s.label),
-          ))
-        ),
-        // Team section
-        h('div', { style:{ marginBottom:28 } },
-          h('div', { className:'caption', style:{ color:UI.label3, marginBottom:12 } }, 'Team Members'),
-          h('div', { className:'card', style:{ overflow:'hidden' } },
-            visibleMembers.map((m, i) => h('div', {
-              key: m.id,
-              style: {
-                display:'flex', alignItems:'center', gap:12, padding:'12px 16px',
-                borderBottom: i < visibleMembers.length - 1 ? `0.5px solid ${UI.sep}` : 'none',
-              },
-            },
-              h(Avatar, { name: m.name, size:36 }),
-              h('div', { style:{ flex:1 } },
-                h('div', { style:{ fontSize:14, fontWeight:600, color:UI.label } }, m.name),
-                h('div', { style:{ fontSize:12, color:UI.label3 } }, m.role),
-              ),
-              h(Chip, { label:m.access, tone: m.access === 'editor' ? 'blue' : 'neutral' })
-            )),
-            proj.members.length > 3 && h('div', {
-              style:{ padding:'10px 16px', fontSize:13, color:UI.blue, cursor:'pointer', textAlign:'center' },
-              onClick: onOpenProject,
-            }, `See all ${proj.members.length} members →`)
-          )
-        ),
-        // Visits section
-        h('div', null,
-          h('div', { className:'caption', style:{ color:UI.label3, marginBottom:12 } }, 'Site Visits'),
-          proj.visits.length === 0
-            ? h('div', { className:'card', style:{ padding:'32px', textAlign:'center', color:UI.label4 } },
-                h('div', { style:{ fontSize:32, marginBottom:8 } }, '📅'),
-                h('div', { style:{ fontSize:15, fontWeight:600 } }, 'No visits yet'),
-                h('div', { style:{ fontSize:13, marginTop:4 } }, 'Start a new site visit to begin logging observations'),
-              )
-            : h('div', { className:'card', style:{ overflow:'hidden' } },
-                proj.visits.map((v, i) => h('div', {
-                  key: v.id,
-                  style: { borderBottom: i < proj.visits.length - 1 ? `0.5px solid ${UI.sep}` : 'none' },
-                },
-                  h(VisitRow, { visit:v, proj, onOpen:() => onOpenVisit(v.id) })
-                ))
-              )
-        )
-      )
-    )
-  );
-}
-
-// ── HomeScreen ─────────────────────────────────────────────────────────────────
-// Two-column layout: 300px sidebar (project list + OD widget) + detail panel.
-function HomeScreen({ projects, onOpenProject, onNewProject, onOpenVisit, dark, toggleTheme, od }) {
-  const [search,   setSearch]   = useStateHS('');
-  const [selId,    setSelId]    = useStateHS(projects[0]?.id || null);
-
-  const filtered = projects.filter(p =>
-    p.name.toLowerCase().includes(search.toLowerCase()) ||
-    (p.client || '').toLowerCase().includes(search.toLowerCase())
-  );
-  const selProj = projects.find(p => p.id === selId) || null;
-
-  return h('div', { style:{ display:'flex', height:'100vh', background:UI.bg } },
-
-    // ── LEFT SIDEBAR ───────────────────────────────────────────────────────────
-    h('div', {
-      style:{
-        width:300, flexShrink:0, display:'flex', flexDirection:'column',
-        borderRight:`0.5px solid ${UI.sep}`, background:UI.surface, overflow:'hidden',
-      },
-    },
-      // App header
       h('div', {
-        style:{
-          padding:'16px 14px 12px', display:'flex', alignItems:'center', gap:10,
-          borderBottom:`0.5px solid ${UI.sep}`,
+        style: { fontFamily: FS_FONT_MONO, fontSize: 13, fontWeight: 700, color: T.ink, letterSpacing: '0.02em' },
+      }, visit.date),
+      h('div', { style: { fontFamily: FS_FONT_MONO, fontSize: 12, color: T.muted } }, visit.time || ''),
+      h('div', { style: { fontSize: 12, color: T.muted, marginTop: 1 } }, visit.weather || ''),
+    ),
+    // Focus / purpose column
+    h('div', {
+      style: { flex: 1, padding: '14px 18px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 6 },
+    },
+      h('div', { style: { display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' } },
+        crit && h(SeverityPill, { level: 'emergent' }),
+        h('span', {
+          style: { fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em', lineHeight: 1.3, color: T.ink },
+        }, visit.purpose || visit.location || 'Site Visit'),
+      ),
+      h('div', { style: { fontFamily: FS_FONT_MONO, fontSize: 11, color: T.muted } },
+        `${visit.obsCount || 0} obs · ${visit.engineer || ''}`
+      ),
+    ),
+    // Crew column
+    crew.length > 0 && h('div', {
+      style: {
+        padding: '14px 14px', borderLeft: `1px solid ${T.rule}`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        minWidth: 72, flexShrink: 0, gap: 4,
+      },
+    },
+      ...crew.slice(0, 3).map((initials, i) =>
+        h(FNAvatar, { key: i, initials, color: avatarColor(initials), size: 24 })
+      ),
+    ),
+  );
+}
+
+// ── HomeTeamRow ───────────────────────────────────────────────────────────────
+function HomeTeamRow({ member, isYou }) {
+  const { T } = useContextHS(window.FNThemeContext);
+  const initials = member.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+  const color = avatarColor(initials);
+  return h('div', { style: { display: 'flex', alignItems: 'center', gap: 10, padding: '8px 4px' } },
+    h(FNAvatar, { initials, color, size: 30 }),
+    h('div', { style: { flex: 1, minWidth: 0 } },
+      h('div', {
+        style: { fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, color: T.ink },
+      },
+        member.name,
+        isYou && h('span', {
+          style: {
+            fontFamily: FS_FONT_MONO, fontSize: 9, color: T.primary,
+            background: T.primarySoft, padding: '1px 4px', fontWeight: 700,
+          },
+        }, 'YOU'),
+      ),
+      h('div', { style: { fontSize: 11, color: T.muted } }, member.role),
+    ),
+  );
+}
+
+// ── HomeScreen — main three-panel layout ──────────────────────────────────────
+function HomeScreen({ projects, onOpenProject, onNewProject, onOpenVisit, onNewVisit, dark, toggleTheme, od }) {
+  const T = dark ? DARK_TOKENS : LIGHT_TOKENS;
+  const S = makeFNStyles(T, dark);
+  const ctx = { T, S, isDark: dark };
+
+  const [activeProjId, setActiveProjId] = useStateHS(projects[0]?.id || null);
+  const [resolved, setResolved]         = useStateHS({});
+  const [hoveredFAB, setHoveredFAB]     = useStateHS(false);
+  const [hoveredNewProj, setHoveredNewProj] = useStateHS(false);
+
+  const activeProj = projects.find(p => p.id === activeProjId) || projects[0] || null;
+
+  // Collect all critical observations across the active project's visits
+  const criticalObs = activeProj
+    ? activeProj.visits.flatMap(v =>
+        v.observations
+          .filter(o => o.severity === 'critical')
+          .map(o => ({ ...o, visitId: v.id }))
+      )
+    : [];
+  const unresolvedCount = criticalObs.filter(o => !resolved[o.id]).length;
+
+  // Activity rows derived from real visits (most recent first)
+  const activityRows = activeProj
+    ? activeProj.visits
+        .slice()
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .slice(0, 8)
+        .map(v => ({
+          when: v.date,
+          who:  v.engineer ? v.engineer.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() : '—',
+          text: `${v.purpose || 'Site visit'} · ${v.obsCount || 0} obs`,
+        }))
+    : [];
+
+  return h(FNThemeContext.Provider, { value: ctx },
+    h('div', { style: S.paper },
+
+      // ── Top bar ────────────────────────────────────────────────────────────
+      h('div', {
+        style: {
+          display: 'flex', alignItems: 'center', gap: 16, padding: '0 24px',
+          height: 52, flexShrink: 0,
+          background: dark ? 'rgba(19,19,19,0.94)' : 'rgba(248,249,250,0.94)',
+          borderBottom: `1px solid ${T.rule}`,
+          backdropFilter: 'saturate(180%) blur(20px)',
         },
       },
-        // App logo
-        h('img', {
-          src: 'logo.png',
-          alt: 'FieldNotes',
-          style:{ width:36, height:36, borderRadius:8, flexShrink:0, objectFit:'cover' },
-        }),
-        h('div', { style:{ flex:1 } },
-          h('div', { style:{ fontSize:15, fontWeight:700, color:UI.label } }, 'FieldNotes'),
-          h('div', { style:{ fontSize:11, color:UI.label3 } }, 'Field Inspection'),
-        ),
+        h(FSLogo, { size: 30 }),
+        h('div', {
+          style: {
+            fontFamily: FS_FONT_SERIF, fontWeight: 700, fontSize: 17,
+            letterSpacing: '-0.01em', color: T.ink,
+          },
+        }, 'FieldNotes'),
+        h('div', { style: { ...S.caption, marginLeft: 4 } }, 'FIELD OBSERVATIONS'),
+        h('div', { style: { flex: 1 } }),
+
+        // Sync status
+        od?.signedIn
+          ? h('div', {
+              style: {
+                display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px',
+                background: T.greenSoft, color: T.green,
+                fontFamily: FS_FONT_MONO, fontSize: 11, fontWeight: 600, letterSpacing: '0.04em',
+              },
+            },
+              h(StatusDot, { color: T.green, size: 7 }),
+              od.syncing ? 'SYNCING…' : 'SYNCED',
+            )
+          : h('div', {
+              style: {
+                display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px',
+                background: T.amberSoft, color: T.amber,
+                fontFamily: FS_FONT_MONO, fontSize: 11, fontWeight: 600, letterSpacing: '0.04em',
+              },
+            },
+              h(StatusDot, { color: T.amber, size: 7 }),
+              'LOCAL ONLY',
+            ),
+
         // Theme toggle
         h('button', {
           onClick: toggleTheme,
-          style:{ background:'none', border:'none', cursor:'pointer', fontSize:18, padding:4 },
-        }, dark ? '☀️' : '🌙')
+          style: {
+            width: 34, height: 34, border: `1px solid ${T.rule}`,
+            background: T.surface, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 15, color: T.ink2,
+          },
+        }, dark ? '☀' : '☾'),
+
+        // Current user avatar
+        h(FNAvatar, { initials: 'AH', color: '#5B4DAB', size: 32 }),
       ),
 
-      // Search
-      h('div', { style:{ padding:'10px 12px' } },
+      // ── Body ───────────────────────────────────────────────────────────────
+      h('div', { style: { flex: 1, display: 'flex', minHeight: 0 } },
+
+        // ── Left sidebar ───────────────────────────────────────────────────
         h('div', {
-          style:{
-            display:'flex', alignItems:'center', gap:8,
-            background:UI.fill4, borderRadius:10, padding:'8px 12px',
+          style: {
+            width: 240, borderRight: `1px solid ${T.rule}`, padding: '18px 14px',
+            display: 'flex', flexDirection: 'column', gap: 18, flexShrink: 0,
+            background: T.paperAlt, overflowY: 'auto',
           },
+          className: 'scroll',
         },
-          h('svg', { width:14, height:14, viewBox:'0 0 24 24', fill:'none',
-            stroke:UI.label4, strokeWidth:2.5, strokeLinecap:'round' },
-            h('circle', { cx:11, cy:11, r:8 }),
-            h('line', { x1:21, y1:21, x2:16.65, y2:16.65 }),
-          ),
-          h('input', {
-            value: search,
-            onChange: e => setSearch(e.target.value),
-            placeholder: 'Search projects…',
-            style:{ flex:1, background:'none', border:'none', outline:'none',
-              fontSize:14, color:UI.label },
-          })
-        )
-      ),
-
-      // Project list
-      h('div', {
-        className: 'scroll',
-        style:{ flex:1, overflowY:'auto', padding:'4px 8px' },
-      },
-        filtered.length === 0
-          ? h('div', { style:{ padding:'24px', textAlign:'center', color:UI.label4, fontSize:13 } },
-              'No projects found'
-            )
-          : filtered.map(p => {
-            const isSelected = p.id === selId;
-            const crit = p.visits.reduce((n, v) => n + (v.critCount || 0), 0);
-            return h('div', {
-              key: p.id,
-              onClick: () => { setSelId(p.id); onOpenProject && onOpenProject(p.id); },
-              onDoubleClick: () => onOpenProject && onOpenProject(p.id),
-              style:{
-                display:'flex', alignItems:'center', gap:10, padding:'10px 10px',
-                borderRadius:10, cursor:'pointer', marginBottom:2,
-                background: isSelected ? UI.blue : 'transparent',
-                transition: 'background 0.15s',
+          // Projects section
+          h('div', null,
+            h('div', {
+              style: { display: 'flex', alignItems: 'center', padding: '0 6px 8px' },
+            },
+              h('div', { style: S.caption }, `PROJECTS · ${projects.length}`),
+              h('div', { style: { flex: 1 } }),
+              h('button', {
+                onMouseEnter: () => setHoveredNewProj(true),
+                onMouseLeave: () => setHoveredNewProj(false),
+                onClick: onNewProject,
+                style: {
+                  display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 7px',
+                  background: hoveredNewProj ? T.primarySoft : 'transparent',
+                  color: T.primary, fontSize: 16, fontWeight: 400,
+                  border: 'none', cursor: 'pointer',
+                },
               },
-            },
-              // Colour dot
-              h('div', {
-                style:{
-                  width:10, height:10, borderRadius:'50%', flexShrink:0,
-                  background: isSelected ? 'rgba(255,255,255,0.7)' : (p.color || UI.blue),
-                },
-              }),
-              // Name + visits
-              h('div', { style:{ flex:1, minWidth:0 } },
-                h('div', {
-                  style:{
-                    fontSize:14, fontWeight:600, color: isSelected ? 'white' : UI.label,
-                    overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
-                  },
-                }, p.name),
-                h('div', { style:{ fontSize:11, color: isSelected ? 'rgba(255,255,255,0.7)' : UI.label3 } },
-                  `${p.visits.length} visit${p.visits.length !== 1 ? 's' : ''}`
-                ),
+                '+',
+                hoveredNewProj && h('span', {
+                  style: { fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap', fontFamily: FS_FONT_UI },
+                }, 'New Project'),
               ),
-              crit > 0 && h('div', {
-                style:{
-                  fontSize:10, fontWeight:700, color: isSelected ? UI.red : 'white',
-                  background: isSelected ? 'rgba(255,255,255,0.9)' : UI.red,
-                  borderRadius:8, padding:'1px 6px',
-                },
-              }, crit)
-            );
-          })
-      ),
+            ),
+            ...projects.map(proj =>
+              h(HomeProjRow, {
+                key: proj.id,
+                proj,
+                active: proj.id === activeProjId,
+                onClick: () => setActiveProjId(proj.id),
+              })
+            ),
+          ),
 
-      // ── Sidebar footer: OD status + New Project ──────────────────────────────
-      h('div', {
-        style:{
-          padding:'10px 14px 14px',
-          borderTop:`0.5px solid ${UI.sep}`,
-          flexShrink:0,
+          // Quick filters
+          h('div', null,
+            h('div', { style: { ...S.caption, padding: '0 6px 8px' } }, 'QUICK FILTERS'),
+            ...[
+              { l: 'Open critical',       n: criticalObs.filter(o => !resolved[o.id]).length, c: T.red   },
+              { l: 'In progress',         n: projects.flatMap(p => p.visits).filter(v => v.status === 'in-progress').length, c: T.amber  },
+              { l: 'This project visits', n: activeProj?.visits.length || 0, c: T.primary },
+              { l: 'Total projects',      n: projects.length, c: T.muted   },
+            ].map(f =>
+              h('div', {
+                key: f.l,
+                style: { display: 'flex', alignItems: 'center', gap: 10, padding: '7px 10px', fontSize: 13, color: T.ink2 },
+              },
+                h(StatusDot, { color: f.c, size: 7 }),
+                h('span', { style: { flex: 1 } }, f.l),
+                h('span', { style: { ...S.mono, fontSize: 12, color: T.muted } }, f.n),
+              )
+            ),
+          ),
+
+          h('div', { style: { flex: 1 } }),
+
+          // OneDrive status block
+          h('div', {
+            style: { padding: 12, background: T.surface, border: `1px solid ${T.rule}` },
+          },
+            h('div', { style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 } },
+              h(StatusDot, { color: od?.signedIn ? T.green : T.muted, size: 7 }),
+              h('span', { style: { fontSize: 12, fontWeight: 600, color: T.ink } }, 'OneDrive'),
+            ),
+            h('div', { style: { fontSize: 11, color: T.muted, lineHeight: 1.4, marginBottom: 8 } },
+              od?.signedIn
+                ? `${od.pending || 0} pending · synced to cloud`
+                : 'Not signed in — data saved locally',
+            ),
+            h('button', {
+              onClick: od?.signedIn ? od.triggerSync : od?.signIn,
+              style: {
+                width: '100%', height: 28, background: T.primarySoft, color: T.primary,
+                fontSize: 12, fontWeight: 600, fontFamily: FS_FONT_UI,
+                border: 'none', cursor: 'pointer',
+              },
+            }, od?.signedIn ? 'Manage sync' : 'Sign in to OneDrive'),
+          ),
+        ),
+
+        // ── Main content ───────────────────────────────────────────────────
+        h('div', {
+          style: { flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', minWidth: 0 },
         },
-      },
-        // OneDrive status widget (only when OD object is present and not loading)
-        od && !od.loading && h('div', {
-          style:{
-            marginBottom:8, padding:'8px 10px',
-            borderRadius:10, background:UI.fill4,
-            display:'flex', alignItems:'center', gap:8,
+          h('div', {
+            className: 'scroll',
+            style: { flex: 1, overflowY: 'auto', padding: '28px 32px 100px', display: 'flex', flexDirection: 'column', gap: 24 },
+          },
+
+            activeProj
+              ? h(React.Fragment, null,
+                  // Project header
+                  h('div', null,
+                    h('div', { style: { ...S.caption, color: T.primary } },
+                      activeProj.type ? activeProj.type.toUpperCase() : 'PROJECT'
+                    ),
+                    h('div', {
+                      style: { display: 'flex', alignItems: 'flex-end', gap: 12, marginTop: 6, flexWrap: 'wrap' },
+                    },
+                      h('h1', {
+                        style: {
+                          fontFamily: FS_FONT_SERIF, fontSize: 30, fontWeight: 700,
+                          letterSpacing: '-0.022em', lineHeight: 1.1, margin: 0, color: T.ink,
+                        },
+                      }, activeProj.name),
+                      h('div', { style: { flex: 1 } }),
+                      h('button', {
+                        onClick: () => onOpenProject(activeProj.id),
+                        style: {
+                          height: 36, padding: '0 16px',
+                          border: `2px solid ${T.ink2}`, background: 'transparent',
+                          fontSize: 13, fontWeight: 600, color: T.ink2, cursor: 'pointer',
+                          fontFamily: FS_FONT_UI,
+                        },
+                      }, 'Manage'),
+                      h('button', {
+                        onClick: () => onNewVisit(activeProj.id),
+                        style: {
+                          height: 36, padding: '0 18px', border: 'none',
+                          background: T.primary, color: '#fff',
+                          fontSize: 13, fontWeight: 700,
+                          display: 'inline-flex', alignItems: 'center', gap: 8,
+                          cursor: 'pointer', fontFamily: FS_FONT_UI, letterSpacing: '0.01em',
+                        },
+                      },
+                        h('span', { style: { fontSize: 16, fontWeight: 300 } }, '＋'),
+                        'New site visit',
+                      ),
+                    ),
+                    h('div', {
+                      style: { display: 'flex', flexWrap: 'wrap', gap: '4px 14px', color: T.muted, fontSize: 13, marginTop: 8 },
+                    },
+                      h('span', { style: { color: T.ink2, fontWeight: 600 } }, activeProj.client || ''),
+                      activeProj.client && h('span', null, '·'),
+                      h('span', null, activeProj.location || ''),
+                    ),
+                  ),
+
+                  // Emergent findings
+                  criticalObs.length > 0 && h('div', null,
+                    h('div', { style: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 } },
+                      h('div', { style: S.caption }, 'EMERGENT FINDINGS'),
+                      unresolvedCount > 0 && h('span', {
+                        style: {
+                          fontFamily: FS_FONT_MONO, fontSize: 10, fontWeight: 700,
+                          color: T.red, background: T.redSoft, padding: '1px 6px',
+                        },
+                      }, unresolvedCount),
+                    ),
+                    h('div', {
+                      className: 'scroll',
+                      style: { display: 'flex', flexDirection: 'column', maxHeight: 180, overflowY: 'auto' },
+                    },
+                      ...criticalObs
+                        .slice()
+                        .sort((a, b) => (resolved[a.id] ? 1 : 0) - (resolved[b.id] ? 1 : 0))
+                        .map(obs =>
+                          h(HomeEmergentBanner, {
+                            key: obs.id,
+                            obs,
+                            resolved: !!resolved[obs.id],
+                            onResolve: () => setResolved(prev => ({ ...prev, [obs.id]: true })),
+                            onOpen: () => onOpenVisit(activeProj.id, obs.visitId),
+                          })
+                        ),
+                    ),
+                  ),
+
+                  // Site visits
+                  h('div', null,
+                    h('div', { style: { display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 12 } },
+                      h('h2', {
+                        style: {
+                          fontFamily: FS_FONT_SERIF, fontSize: 20, fontWeight: 700,
+                          margin: 0, letterSpacing: '-0.01em', color: T.ink,
+                        },
+                      }, 'Site Visits'),
+                      h('span', { style: { ...S.caption, color: T.muted } },
+                        `${activeProj.visits.length} TOTAL`
+                      ),
+                    ),
+                    h('div', { className: 'scroll', style: { overflowY: 'auto' } },
+                      activeProj.visits.length === 0
+                        ? h('div', {
+                            style: {
+                              padding: '40px 20px', textAlign: 'center', color: T.muted,
+                              border: `1px dashed ${T.rule}`, fontSize: 14,
+                            },
+                          }, 'No visits yet — start one with the button above')
+                        : activeProj.visits.map(visit =>
+                            h(HomeVisitCard, {
+                              key: visit.id,
+                              visit,
+                              onClick: () => onOpenVisit(activeProj.id, visit.id),
+                            })
+                          ),
+                    ),
+                  ),
+                )
+              : h('div', {
+                  style: {
+                    flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexDirection: 'column', gap: 12, color: T.muted, padding: 40,
+                  },
+                },
+                  h('div', { style: { fontSize: 48, opacity: 0.3 } }, '📋'),
+                  h('div', { style: { fontSize: 17, fontWeight: 600, color: T.ink } }, 'No projects yet'),
+                  h('div', { style: { fontSize: 14 } }, 'Create your first project to get started'),
+                  h('button', {
+                    onClick: onNewProject,
+                    style: {
+                      marginTop: 16, padding: '10px 24px', background: T.primary, color: '#fff',
+                      border: 'none', fontFamily: FS_FONT_UI, fontSize: 14, fontWeight: 700, cursor: 'pointer',
+                    },
+                  }, '+ New Project'),
+                ),
+          ),
+
+          // FAB — New site visit
+          activeProj && h('button', {
+            onMouseEnter: () => setHoveredFAB(true),
+            onMouseLeave: () => setHoveredFAB(false),
+            onClick: () => onNewVisit(activeProj.id),
+            style: {
+              position: 'absolute', bottom: 28, right: 28, zIndex: 10,
+              height: 48, padding: '0 20px',
+              border: 'none', cursor: 'pointer',
+              background: T.primary, color: '#fff',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.22)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              fontFamily: FS_FONT_UI, fontWeight: 700, letterSpacing: '0.01em',
+              transition: 'all 0.2s cubic-bezier(0.16,1,0.3,1)', whiteSpace: 'nowrap',
+            },
+          },
+            h('span', { style: { fontSize: 20, fontWeight: 300, lineHeight: 1 } }, '＋'),
+            hoveredFAB && h('span', { style: { fontSize: 13 } }, 'New Site Visit'),
+          ),
+        ),
+
+        // ── Right rail ─────────────────────────────────────────────────────
+        activeProj && h('div', {
+          className: 'scroll',
+          style: {
+            width: 268, borderLeft: `1px solid ${T.rule}`, padding: 18, flexShrink: 0,
+            display: 'flex', flexDirection: 'column', gap: 20, overflowY: 'auto',
+            background: T.paperAlt,
           },
         },
-          // Status dot
-          h('div', {
-            style:{
-              width:7, height:7, borderRadius:'50%', flexShrink:0,
-              background: od.syncing ? UI.orange
-                        : !navigator.onLine ? UI.label4
-                        : od.pending > 0 ? UI.orange
-                        : od.signedIn ? UI.green
-                        : UI.label4,
-            },
-          }),
-          // Signed-in state
-          od.signedIn
-            ? h(React.Fragment, null,
-                h('div', { style:{ flex:1, minWidth:0 } },
-                  h('div', {
-                    style:{ fontSize:11, fontWeight:600, color:UI.label,
-                      overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' },
-                  }, od.user?.name || 'OneDrive'),
-                  h('div', { style:{ fontSize:10, color:UI.label3 } },
-                    od.syncing ? 'Uploading…'
-                    : od.pending > 0 ? `${od.pending} pending`
-                    : 'Synced'
-                  ),
-                ),
-                od.pending > 0 && !od.syncing && h('button', {
-                  onClick: () => od.triggerSync(),
-                  style:{ fontSize:11, color:UI.blue, background:'none', border:'none',
-                    cursor:'pointer', fontWeight:600, flexShrink:0, padding:'0 2px' },
-                }, '↑'),
-                h('button', {
-                  onClick: od.signOut,
-                  style:{ fontSize:10, color:UI.label4, background:'none', border:'none',
-                    cursor:'pointer', flexShrink:0, padding:'0 2px' },
-                }, 'Sign out')
-              )
-            // Not signed in
-            : h(React.Fragment, null,
-                h('div', { style:{ flex:1, fontSize:11, color:UI.label3 } }, 'Connect OneDrive'),
-                h('button', {
-                  onClick: od.signIn, disabled: od.loading,
-                  style:{
-                    fontSize:11, fontWeight:600, color:'#0078D4',
-                    background:'none', border:'none',
-                    cursor: od.loading ? 'wait' : 'pointer',
-                    flexShrink:0, padding:'0 2px',
-                  },
-                }, od.loading ? 'Connecting…' : 'Sign in')
-              )
-        ),
-        // New Project button
-        h('button', {
-          onClick: onNewProject, className:'btn-secondary pressable',
-          style:{ width:'100%', display:'flex', alignItems:'center', justifyContent:'center',
-            gap:6, color:UI.blue, background:'transparent', padding:'10px' },
-        },
-          h('svg', { width:16, height:16, viewBox:'0 0 24 24', fill:'none',
-            stroke:'currentColor', strokeWidth:2.5, strokeLinecap:'round' },
-            h('path', { d:'M12 5v14M5 12h14' })
-          ),
-          'New Project'
-        )
-      )
-    ),
 
-    // ── RIGHT PANEL ────────────────────────────────────────────────────────────
-    h(ProjectDetail, {
-      proj: selProj,
-      onOpenVisit: (visitId) => onOpenVisit(selId, visitId),
-      onOpenProject: () => onOpenProject(selId),
-    })
+          // Team
+          h('div', null,
+            h('div', { style: { display: 'flex', alignItems: 'center', marginBottom: 10 } },
+              h('div', { style: S.caption }, `TEAM · ${(activeProj.members || []).length}`),
+              h('div', { style: { flex: 1 } }),
+              h('button', {
+                onClick: () => onOpenProject(activeProj.id),
+                style: {
+                  height: 26, padding: '0 8px', border: `1px solid ${T.rule}`,
+                  background: T.surface, fontSize: 11, fontWeight: 600,
+                  color: T.muted, cursor: 'pointer', fontFamily: FS_FONT_UI,
+                },
+              }, 'Manage'),
+            ),
+            ...(activeProj.members || []).map((m, i) =>
+              h(HomeTeamRow, { key: m.id || i, member: m, isYou: i === 0 })
+            ),
+          ),
+
+          h('div', { style: { height: 1, background: T.rule } }),
+
+          // Activity feed
+          h('div', null,
+            h('div', { style: { display: 'flex', alignItems: 'center', marginBottom: 10 } },
+              h('div', { style: S.caption }, 'ACTIVITY'),
+            ),
+            h('div', { className: 'scroll', style: { maxHeight: 260, overflowY: 'auto' } },
+              activityRows.length === 0
+                ? h('div', { style: { fontSize: 12, color: T.muted, padding: '8px 0' } }, 'No activity yet')
+                : activityRows.map((a, i) =>
+                    h('div', {
+                      key: i,
+                      style: { display: 'flex', gap: 10, padding: '7px 0', borderBottom: `1px solid ${T.rule}` },
+                    },
+                      h('div', {
+                        style: { fontFamily: FS_FONT_MONO, fontSize: 10, color: T.muted, width: 58, flexShrink: 0, paddingTop: 2 },
+                      }, a.when),
+                      h('div', { style: { flex: 1, fontSize: 12, color: T.ink2, lineHeight: 1.45 } },
+                        a.who !== '—' && h('b', { style: { color: T.ink } }, a.who + ' '),
+                        a.text,
+                      ),
+                    )
+                  ),
+            ),
+          ),
+
+          h('div', { style: { height: 1, background: T.rule } }),
+
+          // Project stats
+          h('div', null,
+            h('div', { style: { ...S.caption, marginBottom: 10 } }, 'PROJECT STATS'),
+            ...[
+              { label: 'Total visits',      value: activeProj.visits.length },
+              { label: 'Total observations',value: activeProj.visits.reduce((n, v) => n + (v.obsCount || 0), 0) },
+              { label: 'Critical items',    value: activeProj.visits.reduce((n, v) => n + (v.critCount || 0), 0) },
+              { label: 'Status',            value: activeProj.status ? activeProj.status.charAt(0).toUpperCase() + activeProj.status.slice(1) : 'Active' },
+            ].map(stat =>
+              h('div', {
+                key: stat.label,
+                style: { display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: `1px solid ${T.rule}`, fontSize: 13 },
+              },
+                h('span', { style: { color: T.muted } }, stat.label),
+                h('span', { style: { color: T.ink, fontWeight: 600, fontFamily: FS_FONT_MONO, fontSize: 12 } }, stat.value),
+              )
+            ),
+          ),
+        ),
+      ),
+    ),
   );
 }
